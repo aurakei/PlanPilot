@@ -1,35 +1,48 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Link, Navigate, useNavigate } from 'react-router-dom';
+import Register from './pages/Register';
+import Login from './pages/Login';
+import UserInfo from './pages/UserInfo';
+import { AuthProvider, useAuth } from './AuthContext';
 
-function App() {
-  const [count, setCount] = useState(0)
-
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+function ProtectedRoute({ children }) {
+  const { token, loading } = useAuth();
+  if (loading) return <div>Loading...</div>;
+  return token ? children : <Navigate to="/login" />;
 }
 
-export default App
+function LogoutButton() {
+  const { logout, token } = useAuth();
+  const navigate = useNavigate();
+  if (!token) return null;
+  return <button onClick={() => { logout(); navigate('/login'); }}>Logout</button>;
+}
+
+function AppRoutes() {
+  return (
+    <>
+      <nav style={{ marginBottom: 20 }}>
+        <Link to="/register">Register</Link> |{' '}
+        <Link to="/login">Login</Link> |{' '}
+        <Link to="/user">User Info</Link> |{' '}
+        <LogoutButton />
+      </nav>
+      <Routes>
+        <Route path="/register" element={<Register />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/user" element={<ProtectedRoute><UserInfo /></ProtectedRoute>} />
+        <Route path="/" element={<Login />} />
+      </Routes>
+    </>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <Router>
+        <AppRoutes />
+      </Router>
+    </AuthProvider>
+  );
+}
